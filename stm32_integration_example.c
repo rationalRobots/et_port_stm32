@@ -87,6 +87,8 @@ static system_state_t update_state_machine(system_state_t current_state, uint8_t
     
     TIMED_FUNCTION_ENTER("update_state_machine");
     
+    next_state = STATE_IDLE;  /* Default state */
+    
     switch (current_state)
     {
         case STATE_IDLE:
@@ -159,6 +161,7 @@ static void transmit_timing_report_via_uart(void)
         
         if ((func_name != NULL) && (stats != NULL) && (stats->call_count > 0U))
         {
+            /* Calculate average cycles (call_count > 0 check prevents division by zero) */
             avg_cycles = stats->total_cycles / stats->call_count;
             
             /*
@@ -286,7 +289,7 @@ void TIM2_IRQHandler(void)
  * 4. Memory Considerations:
  *    - MAX_TIMED_FUNCTIONS uses ~100 bytes per function
  *    - Adjust based on available RAM
- *    - 32 functions = ~3.2KB of RAM
+ *    - 32 functions = ~3.2KB of RAM (32 * 100 bytes)
  *
  * 5. Overhead:
  *    - Entry/exit wrappers add ~20-50 cycles overhead
