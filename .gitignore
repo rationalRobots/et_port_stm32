@@ -9,6 +9,8 @@
 
 # Test executables
 test_timing_system
+test_decorator
+example_decorator
 
 # Editor artifacts
 *.swp

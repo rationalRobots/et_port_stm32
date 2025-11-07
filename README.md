@@ -22,11 +22,19 @@ This repository provides a lightweight, BARR-C compliant timing wrapper system f
 - `timing_wrapper_system.c` - Core timing system implementation
 - `port.h` - MCU-specific port layer interface
 - `port.c` - STM32/ARM Cortex-M DWT implementation
-- `example_usage.c` - Example code demonstrating usage
+- `example_decorator_usage.c` - Example using automatic decorator approach (recommended)
+- `example_usage.c` - Example using manual instrumentation approach
+- `stm32_integration_example.c` - Real-world STM32 usage patterns
 
 ## Quick Start
 
-### 1. Initialize the Timing System
+There are two ways to use the timing system:
+1. **Automatic Decorator Approach** (Recommended) - No manual instrumentation needed
+2. **Manual Instrumentation** - For more control or special cases
+
+### Method 1: Automatic Decorator (Recommended)
+
+#### 1. Initialize the Timing System
 
 ```c
 #include "timing_wrapper_system.h"
@@ -42,7 +50,41 @@ int main(void)
 }
 ```
 
-### 2. Wrap Functions with Timing
+#### 2. Enable Profiling for Functions
+
+Simply add `PROFILE_FUNC_ENABLE` before your function definition:
+
+```c
+/* For functions that return a value */
+PROFILE_FUNC_ENABLE(my_function, uint32_t, (uint32_t param), (param))
+{
+    /* Your function implementation - no timing macros needed! */
+    uint32_t result = param * 2U;
+    return result;
+}
+
+/* For void functions */
+PROFILE_FUNC_ENABLE_VOID(init_hardware, (void), ())
+{
+    /* Your initialization code */
+}
+
+/* For functions with multiple parameters */
+PROFILE_FUNC_ENABLE(add_numbers, uint32_t, (uint32_t a, uint32_t b), (a, b))
+{
+    return a + b;
+}
+```
+
+The macro parameters are:
+- **func_name**: Name of your function
+- **return_type**: Return type (omit for PROFILE_FUNC_ENABLE_VOID)
+- **params**: Parameter list WITH types, e.g., `(uint32_t a, float b)`
+- **args**: Argument list WITHOUT types, e.g., `(a, b)`
+
+### Method 2: Manual Instrumentation
+
+For cases where you need more control:
 
 ```c
 static uint32_t my_function(uint32_t param)
@@ -63,6 +105,8 @@ static uint32_t my_function(uint32_t param)
 ```
 
 ### 3. Retrieve Timing Statistics
+
+Both methods produce the same timing statistics:
 
 ```c
 void print_timing_stats(void)
@@ -143,6 +187,41 @@ typedef struct
 To port to other MCUs, implement the following functions in `port.c`:
 - `void port_cycle_counter_init(void)` - Initialize hardware cycle counter
 - `uint32_t port_get_cycle_count(void)` - Read current cycle count
+
+## How the Decorator Approach Works
+
+The `PROFILE_FUNC_ENABLE` macro uses preprocessor magic to automatically wrap your function:
+
+**What you write:**
+```c
+PROFILE_FUNC_ENABLE(my_func, uint32_t, (uint32_t x), (x))
+{
+    return x * 2;
+}
+```
+
+**What the preprocessor generates:**
+```c
+// Implementation function (hidden from callers)
+static uint32_t my_func_impl(uint32_t x) {
+    return x * 2;
+}
+
+// Wrapper function (this is what gets called)
+uint32_t my_func(uint32_t x) {
+    int32_t const timing_idx_ = timing_wrapper_enter("my_func");
+    uint32_t const timing_start_ = port_get_cycle_count();
+    uint32_t const result_ = my_func_impl(x);
+    timing_wrapper_exit(timing_idx_, timing_start_);
+    return result_;
+}
+```
+
+Benefits:
+- No manual instrumentation needed inside function body
+- Original function logic remains clean and readable
+- Easy to enable/disable profiling by removing one line
+- Works with any return type and parameter list
 
 ## BARR-C Compliance
 

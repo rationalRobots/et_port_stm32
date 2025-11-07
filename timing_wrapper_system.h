@@ -88,12 +88,61 @@ extern int32_t timing_wrapper_enter(char const * const func_name);
  */
 extern void timing_wrapper_exit(int32_t func_index, uint32_t entry_timestamp);
 
-/* Macro to simplify function wrapping */
+/* Legacy macros for manual instrumentation (still supported) */
 #define TIMED_FUNCTION_ENTER(name) \
     int32_t const timing_idx_ = timing_wrapper_enter(name); \
     uint32_t const timing_start_ = port_get_cycle_count()
 
 #define TIMED_FUNCTION_EXIT() \
     timing_wrapper_exit(timing_idx_, timing_start_)
+
+/*
+ * Automatic function profiling macros
+ * 
+ * Usage:
+ *   // Original function
+ *   uint32_t my_func(uint32_t param) {
+ *       return param * 2;
+ *   }
+ *   
+ *   // Enable profiling
+ *   PROFILE_FUNC_ENABLE(my_func, uint32_t, (uint32_t param), (param))
+ *
+ * The macro creates a wrapper that automatically adds timing around the original function.
+ * Parameters:
+ *   func_name - Name of the function to profile
+ *   return_type - Return type of the function
+ *   params - Parameter list with types in parentheses, e.g., (int a, float b)
+ *   args - Argument list without types in parentheses, e.g., (a, b)
+ */
+
+/* Helper macro to create the wrapper function */
+#define PROFILE_FUNC_ENABLE(func_name, return_type, params, args) \
+    /* Rename original function */ \
+    static return_type func_name##_impl params; \
+    /* Forward declaration of renamed function */ \
+    return_type func_name params { \
+        int32_t const timing_idx_ = timing_wrapper_enter(#func_name); \
+        uint32_t const timing_start_ = port_get_cycle_count(); \
+        return_type const result_ = func_name##_impl args; \
+        timing_wrapper_exit(timing_idx_, timing_start_); \
+        return result_; \
+    } \
+    /* Define the implementation function */ \
+    static return_type func_name##_impl params
+
+/* Variant for void functions */
+#define PROFILE_FUNC_ENABLE_VOID(func_name, params, args) \
+    /* Rename original function */ \
+    static void func_name##_impl params; \
+    /* Forward declaration of renamed function */ \
+    void func_name params { \
+        int32_t const timing_idx_ = timing_wrapper_enter(#func_name); \
+        uint32_t const timing_start_ = port_get_cycle_count(); \
+        func_name##_impl args; \
+        timing_wrapper_exit(timing_idx_, timing_start_); \
+    } \
+    /* Define the implementation function */ \
+    static void func_name##_impl params
 
 #endif /* TIMING_WRAPPER_SYSTEM_H */
