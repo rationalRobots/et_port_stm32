@@ -118,9 +118,9 @@ extern void timing_wrapper_exit(int32_t func_index, uint32_t entry_timestamp);
 
 /* Helper macro to create the wrapper function */
 #define PROFILE_FUNC_ENABLE(func_name, return_type, params, args) \
-    /* Rename original function */ \
+    /* Forward declaration of implementation function */ \
     static return_type func_name##_impl params; \
-    /* Forward declaration of renamed function */ \
+    /* Wrapper function definition that adds timing */ \
     return_type func_name params { \
         int32_t const timing_idx_ = timing_wrapper_enter(#func_name); \
         uint32_t const timing_start_ = port_get_cycle_count(); \
@@ -133,9 +133,9 @@ extern void timing_wrapper_exit(int32_t func_index, uint32_t entry_timestamp);
 
 /* Variant for void functions */
 #define PROFILE_FUNC_ENABLE_VOID(func_name, params, args) \
-    /* Rename original function */ \
+    /* Forward declaration of implementation function */ \
     static void func_name##_impl params; \
-    /* Forward declaration of renamed function */ \
+    /* Wrapper function definition that adds timing */ \
     void func_name params { \
         int32_t const timing_idx_ = timing_wrapper_enter(#func_name); \
         uint32_t const timing_start_ = port_get_cycle_count(); \
