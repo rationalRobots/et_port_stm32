@@ -1,0 +1,27 @@
+# Build artifacts
+*.o
+*.elf
+*.bin
+*.hex
+*.map
+*.lst
+*.d
+
+# Test executables
+test_timing_system
+test_decorator
+example_decorator
+
+# Editor artifacts
+*.swp
+*.swo
+*~
+.DS_Store
+
+# IDE artifacts
+.vscode/
+.idea/
+*.code-workspace
+
+# Temporary files
+/tmp/
